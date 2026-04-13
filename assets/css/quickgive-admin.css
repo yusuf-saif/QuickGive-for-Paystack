@@ -1,0 +1,73 @@
+/**
+ * QuickGive for Paystack — Admin Styles
+ *
+ * Enhances the WordPress admin settings page appearance.
+ *
+ * @package QuickGive_For_Paystack
+ */
+
+/* ---- Settings page wrapper ---- */
+#toplevel_page_quickgive-for-paystack .wrap h1 {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+/* ---- Section headings inside settings table ---- */
+.quickgive-admin-section-title {
+	font-size: 13px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #1d2327;
+	padding: 16px 0 4px;
+	border-bottom: 2px solid #00c373;
+	margin-bottom: 12px;
+}
+
+/* ---- Status pill in donation log ---- */
+.quickgive-status {
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 10px;
+	border-radius: 99px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.6;
+}
+
+.quickgive-status--success {
+	background: #e6fff6;
+	color: #00a862;
+}
+
+.quickgive-status--failed {
+	background: #fff5f5;
+	color: #c53030;
+}
+
+.quickgive-status--pending {
+	background: #fffaf0;
+	color: #c05621;
+}
+
+/* ---- Shortcode tip box ---- */
+.quickgive-shortcode-tip {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 14px 18px;
+	background: #f0fdf9;
+	border: 1px solid #a7f3d0;
+	border-radius: 8px;
+	margin-bottom: 20px;
+}
+
+.quickgive-shortcode-tip code {
+	background: #dcfce7;
+	color: #15803d;
+	padding: 4px 10px;
+	border-radius: 4px;
+	font-size: 14px;
+	font-weight: 600;
+}
