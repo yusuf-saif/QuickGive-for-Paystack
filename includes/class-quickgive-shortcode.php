@@ -130,6 +130,7 @@ class QuickGive_Shortcode {
 				'nonce'       => wp_create_nonce( 'quickgive_nonce' ),
 				'action'      => 'quickgive_verify',
 				'i18n'        => array(
+					'donate'          => __( 'Donate', 'quickgive-for-paystack' ),
 					'selectAmount'    => __( 'Please select or enter a donation amount.', 'quickgive-for-paystack' ),
 					'validEmail'      => __( 'Please enter a valid email address.', 'quickgive-for-paystack' ),
 					'minAmountMsg'    => __( 'Minimum donation amount is', 'quickgive-for-paystack' ),

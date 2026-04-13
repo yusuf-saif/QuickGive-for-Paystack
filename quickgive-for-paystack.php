@@ -3,7 +3,7 @@
  * Plugin Name:       QuickGive for Paystack
  * Plugin URI:        https://github.com/yusuf-saif/quickgive-for-paystack
  * Description:       Collect one-time donations via a Paystack popup modal. Drop the [paystack_donation_popup] shortcode anywhere.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            S A Yusuf
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'QUICKGIVE_VERSION', '1.0.0' );
+define( 'QUICKGIVE_VERSION', '1.1.0' );
 define( 'QUICKGIVE_FILE', __FILE__ );
 define( 'QUICKGIVE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'QUICKGIVE_URL', plugin_dir_url( __FILE__ ) );
@@ -62,6 +62,7 @@ final class QuickGive_For_Paystack {
 	 */
 	private function load_dependencies() {
 		require_once QUICKGIVE_DIR . 'includes/class-quickgive-logger.php';
+		require_once QUICKGIVE_DIR . 'includes/class-quickgive-email.php';     // v1.1.
 		require_once QUICKGIVE_DIR . 'includes/class-quickgive-admin.php';
 		require_once QUICKGIVE_DIR . 'includes/class-quickgive-ajax.php';
 		require_once QUICKGIVE_DIR . 'includes/class-quickgive-shortcode.php';
@@ -71,7 +72,13 @@ final class QuickGive_For_Paystack {
 	 * Register WordPress hooks.
 	 */
 	private function init_hooks() {
+		// Create table on first activation.
 		register_activation_hook( QUICKGIVE_FILE, array( 'QuickGive_Logger', 'create_table' ) );
+
+		// v1.1 — non-destructive DB upgrade for existing installs. Called directly
+		// because registering on plugins_loaded inside a plugins_loaded callback
+		// would miss the hook (it has already fired at this point).
+		QuickGive_Logger::maybe_upgrade_table();
 
 		new QuickGive_Admin();
 		new QuickGive_Ajax();

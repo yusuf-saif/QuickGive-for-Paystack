@@ -1,17 +1,23 @@
 /**
  * QuickGive for Paystack — Frontend JavaScript
  *
+ * v1.1 changes:
+ *   - Determines `amount_type` ('preset' | 'custom') based on donor selection.
+ *   - Sends `amount_type` in the AJAX verification POST.
+ *   - Two-way deselection: typing in custom input clears preset selection,
+ *     and clicking a preset clears the custom input value.
+ *
  * Manages:
- *   1. Modal open / close / accessibility
- *   2. Preset amount selection
- *   3. Custom amount input
- *   4. Form validation
+ *   1. Modal open / close / accessibility (focus trap, Escape key)
+ *   2. Preset amount button selection
+ *   3. Custom amount input + mutual deselection with presets
+ *   4. Form validation (amount, min/max, email)
  *   5. Paystack popup checkout
- *   6. AJAX server-side verification
+ *   6. AJAX server-side verification with amount_type
  *   7. Success / failure display states
  *
  * Depends on:
- *   - quickgiveConfig  (wp_localize_script — no secret key)
+ *   - quickgiveConfig  (wp_localize_script — public key only, no secret)
  *   - PaystackPop      (Paystack inline SDK from js.paystack.co)
  *
  * @package QuickGive_For_Paystack
@@ -21,7 +27,7 @@
 ( function () {
 	'use strict';
 
-	const cfg = window.quickgiveConfig || {};
+	const cfg  = window.quickgiveConfig || {};
 	const i18n = cfg.i18n || {};
 
 	// -------------------------------------------------------------------------
@@ -32,16 +38,16 @@
 	function formatAmount( amount, currency ) {
 		const symbols = {
 			NGN: '₦', GHS: 'GH₵', ZAR: 'R', KES: 'KSh',
-			USD: '$', GBP: '£', EUR: '€',
+			USD: '$',  GBP: '£',   EUR: '€',
 		};
 		const sym = symbols[ currency ] || ( currency + ' ' );
 		return sym + Number( amount ).toLocaleString();
 	}
 
-	/** Show an alert message inside a panel. */
+	/** Show an alert inside a panel. */
 	function showAlert( alertEl, message, type ) {
 		alertEl.textContent = message;
-		alertEl.className = 'quickgive-alert quickgive-alert--' + ( type || 'error' );
+		alertEl.className   = 'quickgive-alert quickgive-alert--' + ( type || 'error' );
 		alertEl.removeAttribute( 'hidden' );
 	}
 
@@ -52,15 +58,14 @@
 		alertEl.className = 'quickgive-alert';
 	}
 
-	/** Set submit button to loading state. */
+	/** Set submit button to loading/normal state. */
 	function setLoading( btn, isLoading, label ) {
 		btn.disabled = isLoading;
 		const textEl = btn.querySelector( '.quickgive-submit-btn__text' );
 		if ( textEl ) {
-			if ( ! btn._originalLabel ) {
-				btn._originalLabel = textEl.textContent.trim();
-			}
-			textEl.textContent = isLoading ? ( label || i18n.processing || 'Processing…' ) : btn._originalLabel;
+			textEl.textContent = isLoading
+				? ( label || i18n.processing || 'Processing…' )
+				: ( i18n.donate || 'Donate' );
 		}
 		btn.classList.toggle( 'quickgive-submit-btn--loading', isLoading );
 	}
@@ -69,7 +74,6 @@
 	// Modal management
 	// -------------------------------------------------------------------------
 
-	/** Open a modal overlay identified by its instance uid. */
 	function openModal( uid ) {
 		const overlay = document.getElementById( uid + '-modal' );
 		if ( ! overlay ) { return; }
@@ -77,20 +81,15 @@
 		overlay.classList.add( 'quickgive-overlay--visible' );
 		document.body.classList.add( 'quickgive-body-lock' );
 
-		// Focus first focusable element inside modal.
 		const focusTarget = overlay.querySelector( 'button, input, [tabindex]' );
 		if ( focusTarget ) {
 			setTimeout( function () { focusTarget.focus(); }, 50 );
 		}
 
-		// Trap focus within the modal.
-		overlay._focusTrap = function ( e ) {
-			trapFocus( overlay, e );
-		};
+		overlay._focusTrap = function ( e ) { trapFocus( overlay, e ); };
 		overlay.addEventListener( 'keydown', overlay._focusTrap );
 	}
 
-	/** Close a modal overlay. */
 	function closeModal( uid ) {
 		const overlay = document.getElementById( uid + '-modal' );
 		if ( ! overlay ) { return; }
@@ -102,23 +101,22 @@
 			overlay.removeEventListener( 'keydown', overlay._focusTrap );
 		}
 
-		// Return focus to trigger button.
 		const trigger = document.getElementById( uid + '-trigger' );
 		if ( trigger ) { trigger.focus(); }
 	}
 
-	/** Simple focus trap — keeps Tab/Shift+Tab inside the modal. */
 	function trapFocus( container, event ) {
-		if ( event.key !== 'Tab' ) {
-			if ( event.key === 'Escape' ) {
-				const uid = container.dataset.instance;
-				if ( uid ) { closeModal( uid ); }
-			}
+		if ( event.key === 'Escape' ) {
+			const uid = container.dataset.instance;
+			if ( uid ) { closeModal( uid ); }
 			return;
 		}
+		if ( event.key !== 'Tab' ) { return; }
 
 		const focusable = Array.from(
-			container.querySelectorAll( 'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])' )
+			container.querySelectorAll(
+				'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+			)
 		);
 		if ( ! focusable.length ) { return; }
 
@@ -139,42 +137,71 @@
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Build preset amount buttons inside the given container.
+	 * Build preset amount buttons and wire up mutual deselection with custom input.
 	 *
 	 * @param {HTMLElement} presetsContainer
 	 * @param {string}      uid
 	 */
 	function buildPresets( presetsContainer, uid ) {
-		const presets = cfg.presets || [];
+		const presets  = cfg.presets  || [];
 		const currency = cfg.currency || 'NGN';
+
 		presets.forEach( function ( amount ) {
 			const btn = document.createElement( 'button' );
-			btn.type = 'button';
-			btn.className = 'quickgive-preset-btn';
-			btn.dataset.amount = amount;
+			btn.type               = 'button';
+			btn.className          = 'quickgive-preset-btn';
+			btn.dataset.amount     = amount;
 			btn.setAttribute( 'aria-pressed', 'false' );
-			btn.textContent = formatAmount( amount, currency );
+			btn.textContent        = formatAmount( amount, currency );
 			presetsContainer.appendChild( btn );
 		} );
 
-		// Selection logic.
 		presetsContainer.addEventListener( 'click', function ( e ) {
 			const btn = e.target.closest( '.quickgive-preset-btn' );
 			if ( ! btn ) { return; }
 
-			// Deselect all.
+			// Deselect all presets.
 			presetsContainer.querySelectorAll( '.quickgive-preset-btn' ).forEach( function ( b ) {
 				b.classList.remove( 'quickgive-preset-btn--active' );
 				b.setAttribute( 'aria-pressed', 'false' );
 			} );
 
-			// Select clicked.
+			// Select clicked preset.
 			btn.classList.add( 'quickgive-preset-btn--active' );
 			btn.setAttribute( 'aria-pressed', 'true' );
 
-			// Clear custom input if present.
+			// v1.1 — clear custom amount when a preset is chosen.
 			const customInput = document.getElementById( uid + '-custom' );
-			if ( customInput ) { customInput.value = ''; }
+			if ( customInput ) {
+				customInput.value = '';
+				customInput.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+			}
+		} );
+	}
+
+	// -------------------------------------------------------------------------
+	// Custom amount → preset deselection (v1.1)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Wire up the custom amount input so that typing deselects any active preset.
+	 *
+	 * @param {string} uid
+	 */
+	function wireCustomInput( uid ) {
+		const customInput      = document.getElementById( uid + '-custom' );
+		const presetsContainer = document.getElementById( uid + '-presets' );
+
+		if ( ! customInput || ! presetsContainer ) { return; }
+
+		customInput.addEventListener( 'input', function () {
+			if ( customInput.value.trim() !== '' ) {
+				// Deselect all preset buttons.
+				presetsContainer.querySelectorAll( '.quickgive-preset-btn' ).forEach( function ( b ) {
+					b.classList.remove( 'quickgive-preset-btn--active' );
+					b.setAttribute( 'aria-pressed', 'false' );
+				} );
+			}
 		} );
 	}
 
@@ -183,23 +210,29 @@
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Determine the chosen amount in whole currency units.
+	 * Resolve the chosen donation amount and determine its type.
+	 *
+	 * Returns an object { amount, amountType } or null if validation fails.
 	 *
 	 * @param {string}      uid
 	 * @param {HTMLElement} alertEl
-	 * @returns {number|null}  Amount in main currency units, or null if invalid.
+	 * @returns {{ amount: number, amountType: string }|null}
 	 */
 	function resolveAmount( uid, alertEl ) {
 		const presetsContainer = document.getElementById( uid + '-presets' );
 		const customInput      = document.getElementById( uid + '-custom' );
 		const activePreset     = presetsContainer && presetsContainer.querySelector( '.quickgive-preset-btn--active' );
 
-		let amount = 0;
+		let amount     = 0;
+		let amountType = 'preset';
 
+		// Custom input takes priority if it has a non-empty value.
 		if ( customInput && customInput.value.trim() !== '' ) {
-			amount = parseFloat( customInput.value );
+			amount     = parseFloat( customInput.value );
+			amountType = 'custom';
 		} else if ( activePreset ) {
-			amount = parseFloat( activePreset.dataset.amount );
+			amount     = parseFloat( activePreset.dataset.amount );
+			amountType = 'preset';
 		}
 
 		if ( ! amount || amount <= 0 ) {
@@ -220,19 +253,19 @@
 			return null;
 		}
 
-		return amount;
+		return { amount: amount, amountType: amountType };
 	}
 
 	/**
-	 * Validate email input.
+	 * Validate email address.
 	 *
 	 * @param {HTMLInputElement} emailInput
 	 * @param {HTMLElement}      alertEl
-	 * @returns {string|null}
+	 * @returns {string|null} Trimmed valid email, or null.
 	 */
 	function resolveEmail( emailInput, alertEl ) {
 		const email = emailInput ? emailInput.value.trim() : '';
-		const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		const re    = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		if ( ! email || ! re.test( email ) ) {
 			showAlert( alertEl, i18n.validEmail || 'Please enter a valid email address.', 'error' );
 			return null;
@@ -241,26 +274,27 @@
 	}
 
 	// -------------------------------------------------------------------------
-	// Paystack checkout + server-side verification
+	// Paystack checkout + AJAX server-side verification
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Launch the Paystack inline popup and, on success, verify server-side.
+	 * Launch the Paystack inline popup.
 	 *
 	 * @param {string}      uid
-	 * @param {number}      amount   In whole currency units.
+	 * @param {number}      amount     In whole currency units.
+	 * @param {string}      amountType 'preset' or 'custom'.
 	 * @param {string}      email
 	 * @param {HTMLElement} submitBtn
 	 * @param {HTMLElement} alertEl
 	 */
-	function launchPaystack( uid, amount, email, submitBtn, alertEl ) {
+	function launchPaystack( uid, amount, amountType, email, submitBtn, alertEl ) {
 		if ( typeof PaystackPop === 'undefined' ) {
 			showAlert( alertEl, 'Payment gateway failed to load. Please refresh the page.', 'error' );
 			setLoading( submitBtn, false );
 			return;
 		}
 
-		// Paystack expects amount in the smallest currency unit (kobo for NGN, pesewas for GHS, etc).
+		// Paystack expects amounts in the smallest currency unit.
 		const amountInKobo = Math.round( amount * 100 );
 
 		const popup = PaystackPop.setup( {
@@ -271,13 +305,11 @@
 			ref:      'QG-' + Date.now() + '-' + Math.random().toString( 36 ).slice( 2, 11 ),
 			label:    'Donation',
 
-			// ---- Paystack callbacks ----
-
 			onSuccess: function ( transaction ) {
-				// Frontend callback fires on successful payment — do NOT trust this alone.
-				// MUST verify server-side before showing success.
+				// Frontend success callback — do NOT show success yet.
+				// Must verify server-side before confirming.
 				setLoading( submitBtn, true, i18n.verifying || 'Verifying payment…' );
-				verifyServerSide( uid, transaction.reference, email, amountInKobo, submitBtn, alertEl );
+				verifyServerSide( uid, transaction.reference, email, amountInKobo, amountType, submitBtn, alertEl );
 			},
 
 			onCancel: function () {
@@ -290,33 +322,35 @@
 	}
 
 	/**
-	 * Send the transaction reference to the WordPress backend for verification.
-	 * The secret key lives entirely on the server — never sent here.
+	 * POST the transaction reference to WordPress for server-side verification.
+	 *
+	 * The backend (class-quickgive-ajax.php) fetches the Paystack API using the
+	 * secret key — which never touches this file.
 	 *
 	 * @param {string}      uid
 	 * @param {string}      reference
 	 * @param {string}      email
 	 * @param {number}      amountInKobo
+	 * @param {string}      amountType   'preset' or 'custom'  (v1.1).
 	 * @param {HTMLElement} submitBtn
 	 * @param {HTMLElement} alertEl
 	 */
-	function verifyServerSide( uid, reference, email, amountInKobo, submitBtn, alertEl ) {
+	function verifyServerSide( uid, reference, email, amountInKobo, amountType, submitBtn, alertEl ) {
 		const formData = new FormData();
-		formData.append( 'action',    cfg.action );
-		formData.append( 'nonce',     cfg.nonce );
-		formData.append( 'reference', reference );
-		formData.append( 'email',     email );
-		formData.append( 'amount',    amountInKobo );
-		formData.append( 'currency',  cfg.currency );
+		formData.append( 'action',      cfg.action );
+		formData.append( 'nonce',       cfg.nonce );
+		formData.append( 'reference',   reference );
+		formData.append( 'email',       email );
+		formData.append( 'amount',      amountInKobo );
+		formData.append( 'currency',    cfg.currency );
+		formData.append( 'amount_type', amountType );  // v1.1
 
 		fetch( cfg.ajaxUrl, {
 			method:      'POST',
 			credentials: 'same-origin',
 			body:        formData,
 		} )
-			.then( function ( response ) {
-				return response.json();
-			} )
+			.then( function ( response ) { return response.json(); } )
 			.then( function ( json ) {
 				setLoading( submitBtn, false );
 
@@ -339,7 +373,7 @@
 	// Success state
 	// -------------------------------------------------------------------------
 
-	/** Hide form body and display the thank-you panel. */
+	/** Hide form body and show the thank-you panel. */
 	function showSuccess( uid, message ) {
 		const overlay   = document.getElementById( uid + '-modal' );
 		const body      = overlay && overlay.querySelector( '.quickgive-modal__body' );
@@ -347,9 +381,9 @@
 		const successEl = document.getElementById( uid + '-success' );
 		const thankYou  = document.getElementById( uid + '-thankyou' );
 
-		if ( body )      { body.setAttribute( 'hidden', '' ); }
-		if ( header )    { header.setAttribute( 'hidden', '' ); }
-		if ( thankYou )  { thankYou.innerHTML = message; }
+		if ( body )     { body.setAttribute( 'hidden', '' ); }
+		if ( header )   { header.setAttribute( 'hidden', '' ); }
+		if ( thankYou ) { thankYou.innerHTML = message; }
 		if ( successEl ) {
 			successEl.removeAttribute( 'hidden' );
 			const heading = successEl.querySelector( '.quickgive-success__heading' );
@@ -372,19 +406,22 @@
 				buildPresets( presetsContainer, uid );
 			}
 
+			// v1.1 — wire custom input deselection.
+			wireCustomInput( uid );
+
 			trigger.addEventListener( 'click', function () {
 				openModal( uid );
 			} );
 		} );
 
-		// Close buttons (modal header X + success Close).
+		// Close buttons (header X + success panel Close).
 		document.querySelectorAll( '[data-close]' ).forEach( function ( btn ) {
 			btn.addEventListener( 'click', function () {
 				closeModal( btn.dataset.close );
 			} );
 		} );
 
-		// Click overlay backdrop to close.
+		// Click backdrop to close.
 		document.querySelectorAll( '.quickgive-overlay' ).forEach( function ( overlay ) {
 			overlay.addEventListener( 'click', function ( e ) {
 				if ( e.target === overlay ) {
@@ -394,30 +431,29 @@
 			} );
 		} );
 
-		// Submit button.
+		// Submit buttons.
 		document.querySelectorAll( '.quickgive-submit-btn' ).forEach( function ( btn ) {
 			btn.addEventListener( 'click', function () {
-				const uid       = btn.dataset.instance;
-				const emailId   = btn.dataset.emailId;
-				const alertId   = btn.dataset.alertId;
-				const emailInput = document.getElementById( emailId );
-				const alertEl   = document.getElementById( alertId );
+				const uid        = btn.dataset.instance;
+				const emailInput = document.getElementById( btn.dataset.emailId );
+				const alertEl    = document.getElementById( btn.dataset.alertId );
 
 				clearAlert( alertEl );
 
-				const amount = resolveAmount( uid, alertEl );
-				if ( amount === null ) { return; }
+				// v1.1 — resolve returns { amount, amountType } or null.
+				const resolved = resolveAmount( uid, alertEl );
+				if ( resolved === null ) { return; }
 
 				const email = resolveEmail( emailInput, alertEl );
 				if ( email === null ) { return; }
 
 				setLoading( btn, true );
-				launchPaystack( uid, amount, email, btn, alertEl );
+				launchPaystack( uid, resolved.amount, resolved.amountType, email, btn, alertEl );
 			} );
 		} );
 	}
 
-	// Boot after the DOM is ready.
+	// Boot after DOM is ready.
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', init );
 	} else {

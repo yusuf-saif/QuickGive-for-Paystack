@@ -1,39 +1,90 @@
 /**
  * QuickGive for Paystack — Admin Styles
  *
- * Enhances the WordPress admin settings page appearance.
+ * v1.1 additions:
+ *   - Overview summary cards (.quickgive-overview-cards / .quickgive-card)
+ *   - Amount-type badge (.quickgive-type-badge)
  *
  * @package QuickGive_For_Paystack
  */
 
-/* ---- Settings page wrapper ---- */
-#toplevel_page_quickgive-for-paystack .wrap h1 {
+/* ---- Shortcode tip box ---- */
+.quickgive-shortcode-tip {
 	display: flex;
 	align-items: center;
-	gap: 10px;
+	flex-wrap: wrap;
+	gap: 8px 10px;
+	padding: 14px 18px;
+	background: #f0fdf9;
+	border: 1px solid #a7f3d0;
+	border-radius: 8px;
+	margin-bottom: 24px;
+	font-size: 13.5px;
 }
 
-/* ---- Section headings inside settings table ---- */
-.quickgive-admin-section-title {
+.quickgive-shortcode-tip code {
+	background: #dcfce7;
+	color: #15803d;
+	padding: 3px 10px;
+	border-radius: 4px;
 	font-size: 13px;
 	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	color: #1d2327;
-	padding: 16px 0 4px;
-	border-bottom: 2px solid #00c373;
-	margin-bottom: 12px;
 }
 
-/* ---- Status pill in donation log ---- */
+/* ---- Overview cards (v1.1) ---- */
+.quickgive-overview-cards {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin: 16px 0 0;
+}
+
+.quickgive-card {
+	flex: 1 1 180px;
+	max-width: 240px;
+	padding: 20px 22px;
+	background: #ffffff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.quickgive-card__value {
+	font-size: 28px;
+	font-weight: 800;
+	color: #1a202c;
+	line-height: 1;
+	margin-bottom: 6px;
+	letter-spacing: -0.5px;
+}
+
+.quickgive-card__label {
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #718096;
+}
+
+.quickgive-card--success .quickgive-card__value {
+	color: #00a862;
+}
+
+.quickgive-card--raised .quickgive-card__value {
+	color: #5a3fc0;
+}
+
+/* ---- Donation status pill ---- */
 .quickgive-status {
 	display: inline-flex;
 	align-items: center;
 	padding: 3px 10px;
 	border-radius: 99px;
-	font-size: 12px;
-	font-weight: 600;
+	font-size: 11.5px;
+	font-weight: 700;
 	line-height: 1.6;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
 }
 
 .quickgive-status--success {
@@ -51,23 +102,24 @@
 	color: #c05621;
 }
 
-/* ---- Shortcode tip box ---- */
-.quickgive-shortcode-tip {
-	display: flex;
+/* ---- Amount-type badge (v1.1) ---- */
+.quickgive-type-badge {
+	display: inline-flex;
 	align-items: center;
-	gap: 10px;
-	padding: 14px 18px;
-	background: #f0fdf9;
-	border: 1px solid #a7f3d0;
-	border-radius: 8px;
-	margin-bottom: 20px;
+	padding: 2px 9px;
+	border-radius: 99px;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
 }
 
-.quickgive-shortcode-tip code {
-	background: #dcfce7;
-	color: #15803d;
-	padding: 4px 10px;
-	border-radius: 4px;
-	font-size: 14px;
-	font-weight: 600;
+.quickgive-type-badge--preset {
+	background: #eff6ff;
+	color: #1d4ed8;
+}
+
+.quickgive-type-badge--custom {
+	background: #faf5ff;
+	color: #7e22ce;
 }
