@@ -49,6 +49,7 @@ $allow_custom = isset( $opts['allow_custom'] ) && '1' === $opts['allow_custom'];
 		aria-labelledby="<?php echo esc_attr( $uid . '-title' ); ?>"
 		aria-hidden="true"
 		data-instance="<?php echo esc_attr( $uid ); ?>"
+		style="display:none"
 	>
 		<div class="quickgive-modal" role="document">
 

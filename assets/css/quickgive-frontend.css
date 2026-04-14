@@ -142,17 +142,13 @@ body.quickgive-body-lock {
 	backdrop-filter: blur(6px);
 	-webkit-backdrop-filter: blur(6px);
 
-	/* Hidden by default */
+	/* Fade handled by JS toggling display + this opacity transition */
 	opacity: 0;
-	visibility: hidden;
-	pointer-events: none;
-	transition: opacity 0.28s ease, visibility 0.28s ease;
+	transition: opacity 0.28s ease;
 }
 
 .quickgive-overlay--visible {
 	opacity: 1;
-	visibility: visible;
-	pointer-events: all;
 }
 
 /* ============================================================================

@@ -77,6 +77,11 @@
 	function openModal( uid ) {
 		const overlay = document.getElementById( uid + '-modal' );
 		if ( ! overlay ) { return; }
+
+		// Show the element first, then trigger the CSS fade-in on next frame.
+		overlay.style.display = 'flex';
+		// eslint-disable-next-line no-unused-expressions
+		overlay.offsetHeight; // force reflow so the transition fires
 		overlay.removeAttribute( 'aria-hidden' );
 		overlay.classList.add( 'quickgive-overlay--visible' );
 		document.body.classList.add( 'quickgive-body-lock' );
@@ -100,6 +105,12 @@
 		if ( overlay._focusTrap ) {
 			overlay.removeEventListener( 'keydown', overlay._focusTrap );
 		}
+
+		// Hide the element after the CSS fade-out transition completes.
+		overlay.addEventListener( 'transitionend', function handler() {
+			overlay.style.display = 'none';
+			overlay.removeEventListener( 'transitionend', handler );
+		} );
 
 		const trigger = document.getElementById( uid + '-trigger' );
 		if ( trigger ) { trigger.focus(); }
