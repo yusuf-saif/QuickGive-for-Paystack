@@ -27,7 +27,7 @@ class QuickDonate_Logger {
 	/**
 	 * Current DB version.
 	 */
-	const DB_VERSION = '1.2.0';
+	const DB_VERSION = '1.0.0';
 
 	/**
 	 * Current DB version option.

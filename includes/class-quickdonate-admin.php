@@ -44,6 +44,16 @@ class QuickDonate_Admin {
 			56
 		);
 
+		// Add explicit Settings submenu with slug quickdonate-settings for consistency.
+		add_submenu_page(
+			QUICKDONATE_SLUG,
+			__( 'Settings', 'quickdonate' ),
+			__( 'Settings', 'quickdonate' ),
+			'manage_options',
+			QUICKDONATE_SLUG . '-settings',
+			array( $this, 'render_settings_page' )
+		);
+
 		add_submenu_page(
 			QUICKDONATE_SLUG,
 			__( 'Overview', 'quickdonate' ),
@@ -58,7 +68,7 @@ class QuickDonate_Admin {
 			__( 'Donation Log', 'quickdonate' ),
 			__( 'Donation Log', 'quickdonate' ),
 			'manage_options',
-			QUICKDONATE_SLUG . '-log',
+			QUICKDONATE_SLUG . '-logs',
 			array( $this, 'render_log_page' )
 		);
 	}
@@ -136,8 +146,9 @@ class QuickDonate_Admin {
 	public function enqueue_admin_assets( $hook ) {
 		$our_hooks = array(
 			'toplevel_page_' . QUICKDONATE_SLUG,
+			QUICKDONATE_SLUG . '_page_' . QUICKDONATE_SLUG . '-settings',
 			QUICKDONATE_SLUG . '_page_' . QUICKDONATE_SLUG . '-overview',
-			QUICKDONATE_SLUG . '_page_' . QUICKDONATE_SLUG . '-log',
+			QUICKDONATE_SLUG . '_page_' . QUICKDONATE_SLUG . '-logs',
 		);
 
 		if ( ! in_array( $hook, $our_hooks, true ) ) {
@@ -153,15 +164,28 @@ class QuickDonate_Admin {
 	}
 
 	/**
-	 * Render the settings page.
+	 * Render the settings page (with tabs).
 	 *
 	 * @return void
 	 */
 	public function render_settings_page() {
 		$this->check_permissions();
 
-		$settings = QuickDonate_Plugin::get_settings();
-		$docs_url = plugins_url( 'docs/overview.md', QUICKDONATE_FILE );
+		$settings  = QuickDonate_Plugin::get_settings();
+		$docs_url  = plugins_url( 'docs/overview.md', QUICKDONATE_FILE );
+		$active    = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
+		$tabs      = array(
+			'general'  => __( 'General', 'quickdonate' ),
+			'emails'   => __( 'Emails', 'quickdonate' ),
+			'gateways' => __( 'Gateways', 'quickdonate' ),
+			'logs'     => __( 'Logs', 'quickdonate' ),
+			'advanced' => __( 'Advanced', 'quickdonate' ),
+		);
+		if ( ! isset( $tabs[ $active ] ) ) {
+			$active = 'general';
+		}
+
+		$settings_page = admin_url( 'admin.php?page=' . QUICKDONATE_SLUG . '-settings' );
 		?>
 		<div class="wrap quickdonate-admin">
 			<?php $this->render_page_header( __( 'Settings', 'quickdonate' ), __( 'Configure your donation flow, email copy, logging visibility, and gateway settings from one place.', 'quickdonate' ) ); ?>
@@ -178,86 +202,130 @@ class QuickDonate_Admin {
 				</div>
 			</div>
 
+			<div class="quickdonate-tabs">
+				<?php foreach ( $tabs as $key => $label ) : ?>
+					<a class="quickdonate-tab <?php echo esc_attr( $active === $key ? 'is-active' : '' ); ?>" href="<?php echo esc_url( add_query_arg( 'tab', $key, $settings_page ) ); ?>"><?php echo esc_html( $label ); ?></a>
+				<?php endforeach; ?>
+				<div class="quickdonate-tabs__spacer"></div>
+				<a class="button button-secondary" href="<?php echo esc_url( $docs_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Docs', 'quickdonate' ); ?></a>
+			</div>
+
 			<?php settings_errors(); ?>
 
 			<form method="post" action="options.php" class="quickdonate-settings-form">
 				<?php settings_fields( QUICKDONATE_SLUG ); ?>
 
-				<div class="quickdonate-grid quickdonate-grid--settings">
-					<div class="quickdonate-panel">
-						<h2><?php esc_html_e( 'General Settings', 'quickdonate' ); ?></h2>
-						<p class="quickdonate-panel__intro"><?php esc_html_e( 'Control whether donations are available and how the main popup behaves.', 'quickdonate' ); ?></p>
-						<?php
-						$this->render_toggle_field( 'donations_enabled', __( 'Enable donations', 'quickdonate' ), $settings['donations_enabled'], __( 'Turn the donation popup on or off site-wide without removing your shortcode.', 'quickdonate' ) );
-						$this->render_text_field( 'button_label', __( 'Button label', 'quickdonate' ), $settings['button_label'], __( 'Shown on the donation trigger button.', 'quickdonate' ) );
-						$this->render_currency_field( 'currency', __( 'Donation currency', 'quickdonate' ), $settings['currency'] );
-						$this->render_textarea_field( 'thankyou_message', __( 'Thank-you message', 'quickdonate' ), $settings['thankyou_message'], 4, __( 'Displayed after a verified successful payment.', 'quickdonate' ) );
-						$this->render_page_dropdown_field( 'success_page_id', __( 'Success page', 'quickdonate' ), (int) $settings['success_page_id'], __( 'Optional redirect after a verified successful donation.', 'quickdonate' ) );
-						$this->render_page_dropdown_field( 'failure_page_id', __( 'Failure page', 'quickdonate' ), (int) $settings['failure_page_id'], __( 'Optional redirect after a cancelled or failed checkout.', 'quickdonate' ) );
-						?>
-					</div>
-
-					<div class="quickdonate-panel">
-						<h2><?php esc_html_e( 'Donations', 'quickdonate' ); ?></h2>
-						<p class="quickdonate-panel__intro"><?php esc_html_e( 'Set your available donation amounts and validation rules.', 'quickdonate' ); ?></p>
-						<?php
-						$this->render_text_field( 'preset_amounts', __( 'Preset amounts', 'quickdonate' ), $settings['preset_amounts'], __( 'Comma-separated values such as 500,1000,2500.', 'quickdonate' ) );
-						$this->render_toggle_field( 'allow_custom', __( 'Allow custom amount', 'quickdonate' ), $settings['allow_custom'], __( 'When enabled, donors can enter their own amount.', 'quickdonate' ) );
-						$this->render_number_field( 'min_amount', __( 'Minimum amount', 'quickdonate' ), (int) $settings['min_amount'], __( 'Use 0 to leave the minimum open.', 'quickdonate' ) );
-						$this->render_number_field( 'max_amount', __( 'Maximum amount', 'quickdonate' ), (int) $settings['max_amount'], __( 'Use 0 to allow any amount above the minimum.', 'quickdonate' ) );
-						?>
-					</div>
-
-					<div class="quickdonate-panel">
-						<h2><?php esc_html_e( 'Emails', 'quickdonate' ); ?></h2>
-						<p class="quickdonate-panel__intro"><?php esc_html_e( 'Thank-you emails are sent only after server-side payment verification succeeds.', 'quickdonate' ); ?></p>
-						<?php
-						$this->render_toggle_field( 'email_enabled', __( 'Enable thank-you email', 'quickdonate' ), $settings['email_enabled'], __( 'Disabled by default until you are ready to send donor emails.', 'quickdonate' ) );
-						$this->render_text_field( 'email_from_name', __( 'Sender name', 'quickdonate' ), $settings['email_from_name'] );
-						$this->render_text_field( 'email_from_email', __( 'Sender email', 'quickdonate' ), $settings['email_from_email'] );
-						$this->render_text_field( 'email_subject', __( 'Thank-you email subject', 'quickdonate' ), $settings['email_subject'] );
-						$this->render_textarea_field( 'email_body', __( 'Thank-you email body', 'quickdonate' ), $settings['email_body'], 8, __( 'Available placeholders: {amount}, {currency}, {email}, {reference}, {site_name}', 'quickdonate' ) );
-						?>
-					</div>
-
-					<div class="quickdonate-panel">
-						<h2><?php esc_html_e( 'Gateways', 'quickdonate' ); ?></h2>
-						<p class="quickdonate-panel__intro"><?php esc_html_e( 'QuickDonate is gateway-ready. Paystack is the first production gateway available today.', 'quickdonate' ); ?></p>
-						<?php $this->render_gateway_field( $settings ); ?>
-						<div class="quickdonate-gateway-card quickdonate-gateway-card--active">
-							<div>
-								<strong><?php esc_html_e( 'Paystack', 'quickdonate' ); ?></strong>
-								<p><?php esc_html_e( 'Enabled and fully supported for checkout and verification.', 'quickdonate' ); ?></p>
+				<div class="quickdonate-tab-panels">
+					<!-- General tab: general + donations -->
+					<div class="quickdonate-tab-panel <?php echo esc_attr( $active === 'general' ? 'is-active' : '' ); ?>" data-tab="general">
+						<div class="quickdonate-grid quickdonate-grid--settings">
+							<div class="quickdonate-panel">
+								<h2><?php esc_html_e( 'General Settings', 'quickdonate' ); ?></h2>
+								<p class="quickdonate-panel__intro"><?php esc_html_e( 'Control whether donations are available and how the main popup behaves.', 'quickdonate' ); ?></p>
+								<?php
+								$this->render_toggle_field( 'donations_enabled', __( 'Enable donations', 'quickdonate' ), $settings['donations_enabled'], __( 'Turn the donation popup on or off site-wide without removing your shortcode.', 'quickdonate' ) );
+								$this->render_text_field( 'button_label', __( 'Button label', 'quickdonate' ), $settings['button_label'], __( 'Shown on the donation trigger button.', 'quickdonate' ) );
+								$this->render_currency_field( 'currency', __( 'Donation currency', 'quickdonate' ), $settings['currency'] );
+								?>
 							</div>
-							<span class="quickdonate-badge quickdonate-badge--success"><?php esc_html_e( 'Active', 'quickdonate' ); ?></span>
+
+							<div class="quickdonate-panel">
+								<h2><?php esc_html_e( 'Donations', 'quickdonate' ); ?></h2>
+								<p class="quickdonate-panel__intro"><?php esc_html_e( 'Set your available donation amounts and validation rules.', 'quickdonate' ); ?></p>
+								<?php
+								$this->render_text_field( 'preset_amounts', __( 'Preset amounts', 'quickdonate' ), $settings['preset_amounts'], __( 'Comma-separated values such as 500,1000,2500.', 'quickdonate' ) );
+								$this->render_toggle_field( 'allow_custom', __( 'Allow custom amount', 'quickdonate' ), $settings['allow_custom'], __( 'When enabled, donors can enter their own amount.', 'quickdonate' ) );
+								$this->render_number_field( 'min_amount', __( 'Minimum amount', 'quickdonate' ), (int) $settings['min_amount'], __( 'Use 0 to leave the minimum open.', 'quickdonate' ) );
+								$this->render_number_field( 'max_amount', __( 'Maximum amount', 'quickdonate' ), (int) $settings['max_amount'], __( 'Use 0 to allow any amount above the minimum.', 'quickdonate' ) );
+								?>
+							</div>
 						</div>
 					</div>
 
-					<div class="quickdonate-panel">
-						<h2><?php esc_html_e( 'Advanced', 'quickdonate' ); ?></h2>
-						<p class="quickdonate-panel__intro"><?php esc_html_e( 'Technical settings that should only be changed by someone managing your payment account.', 'quickdonate' ); ?></p>
-						<?php
-						$this->render_mode_field( 'mode', __( 'Mode', 'quickdonate' ), $settings['mode'] );
-						$this->render_text_field( 'public_key_test', __( 'Test public key', 'quickdonate' ), $settings['public_key_test'] );
-						$this->render_password_field( 'secret_key_test', __( 'Test secret key', 'quickdonate' ), $settings['secret_key_test'] );
-						$this->render_text_field( 'public_key_live', __( 'Live public key', 'quickdonate' ), $settings['public_key_live'] );
-						$this->render_password_field( 'secret_key_live', __( 'Live secret key', 'quickdonate' ), $settings['secret_key_live'] );
-						?>
+					<!-- Emails tab -->
+					<div class="quickdonate-tab-panel <?php echo esc_attr( $active === 'emails' ? 'is-active' : '' ); ?>" data-tab="emails">
+						<div class="quickdonate-grid quickdonate-grid--settings">
+							<div class="quickdonate-panel">
+								<h2><?php esc_html_e( 'Emails', 'quickdonate' ); ?></h2>
+								<p class="quickdonate-panel__intro"><?php esc_html_e( 'Thank-you emails are sent only after server-side payment verification succeeds.', 'quickdonate' ); ?></p>
+								<?php
+								$this->render_toggle_field( 'email_enabled', __( 'Enable thank-you email', 'quickdonate' ), $settings['email_enabled'], __( 'Disabled by default until you are ready to send donor emails.', 'quickdonate' ) );
+								$this->render_text_field( 'email_from_name', __( 'Sender name', 'quickdonate' ), $settings['email_from_name'] );
+								$this->render_text_field( 'email_from_email', __( 'Sender email', 'quickdonate' ), $settings['email_from_email'] );
+								$this->render_text_field( 'email_subject', __( 'Thank-you email subject', 'quickdonate' ), $settings['email_subject'] );
+								$this->render_textarea_field( 'email_body', __( 'Thank-you email body', 'quickdonate' ), $settings['email_body'], 8, __( 'Available placeholders: {amount}, {currency}, {email}, {reference}, {site_name}', 'quickdonate' ) );
+								?>
+							</div>
+						</div>
 					</div>
 
-					<div class="quickdonate-panel">
-						<h2><?php esc_html_e( 'Logs & Help', 'quickdonate' ); ?></h2>
-						<p class="quickdonate-panel__intro"><?php esc_html_e( 'QuickDonate records payment attempts and only marks a donation successful after verification.', 'quickdonate' ); ?></p>
-						<div class="quickdonate-help-links">
-							<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . QUICKDONATE_SLUG . '-log' ) ); ?>"><?php esc_html_e( 'Open donation log', 'quickdonate' ); ?></a>
-							<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . QUICKDONATE_SLUG . '-overview' ) ); ?>"><?php esc_html_e( 'Open dashboard', 'quickdonate' ); ?></a>
-							<a class="button button-secondary" href="<?php echo esc_url( $docs_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Read bundled docs', 'quickdonate' ); ?></a>
+					<!-- Gateways tab -->
+					<div class="quickdonate-tab-panel <?php echo esc_attr( $active === 'gateways' ? 'is-active' : '' ); ?>" data-tab="gateways">
+						<div class="quickdonate-grid quickdonate-grid--settings">
+							<div class="quickdonate-panel">
+								<h2><?php esc_html_e( 'Gateways', 'quickdonate' ); ?></h2>
+								<p class="quickdonate-panel__intro"><?php esc_html_e( 'QuickDonate is gateway-ready. Paystack is the first production gateway available today.', 'quickdonate' ); ?></p>
+								<?php $this->render_gateway_field( $settings ); ?>
+								<div class="quickdonate-gateway-card quickdonate-gateway-card--active">
+									<div>
+										<strong><?php esc_html_e( 'Paystack', 'quickdonate' ); ?></strong>
+										<p><?php esc_html_e( 'Enabled and fully supported for checkout and verification.', 'quickdonate' ); ?></p>
+									</div>
+									<span class="quickdonate-badge quickdonate-badge--success"><?php esc_html_e( 'Active', 'quickdonate' ); ?></span>
+								</div>
+							</div>
+
+							<div class="quickdonate-panel">
+								<h2><?php esc_html_e( 'Keys & Mode', 'quickdonate' ); ?></h2>
+								<p class="quickdonate-panel__intro"><?php esc_html_e( 'Enter your Paystack keys and choose test or live mode.', 'quickdonate' ); ?></p>
+								<?php
+								$this->render_mode_field( 'mode', __( 'Mode', 'quickdonate' ), $settings['mode'] );
+								$this->render_text_field( 'public_key_test', __( 'Test public key', 'quickdonate' ), $settings['public_key_test'] );
+								$this->render_password_field( 'secret_key_test', __( 'Test secret key', 'quickdonate' ), $settings['secret_key_test'] );
+								$this->render_text_field( 'public_key_live', __( 'Live public key', 'quickdonate' ), $settings['public_key_live'] );
+								$this->render_password_field( 'secret_key_live', __( 'Live secret key', 'quickdonate' ), $settings['secret_key_live'] );
+								?>
+							</div>
 						</div>
-						<ul class="quickdonate-checklist">
-							<li><?php esc_html_e( 'Legacy shortcode aliases still resolve to the new renderer.', 'quickdonate' ); ?></li>
-							<li><?php esc_html_e( 'No secret key is exposed in frontend markup or JavaScript.', 'quickdonate' ); ?></li>
-							<li><?php esc_html_e( 'Future gateway expansion can reuse the same AJAX verification flow.', 'quickdonate' ); ?></li>
-						</ul>
+					</div>
+
+					<!-- Logs tab -->
+					<div class="quickdonate-tab-panel <?php echo esc_attr( $active === 'logs' ? 'is-active' : '' ); ?>" data-tab="logs">
+						<div class="quickdonate-grid quickdonate-grid--settings">
+							<div class="quickdonate-panel">
+								<h2><?php esc_html_e( 'Logs', 'quickdonate' ); ?></h2>
+								<p class="quickdonate-panel__intro"><?php esc_html_e( 'QuickDonate records donation attempts and verification outcomes. View your full log for detailed entries.', 'quickdonate' ); ?></p>
+								<div class="quickdonate-help-links">
+									<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . QUICKDONATE_SLUG . '-logs' ) ); ?>"><?php esc_html_e( 'Open donation log', 'quickdonate' ); ?></a>
+									<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . QUICKDONATE_SLUG . '-overview' ) ); ?>"><?php esc_html_e( 'Open dashboard', 'quickdonate' ); ?></a>
+								</div>
+								<ul class="quickdonate-checklist">
+									<li><?php esc_html_e( 'Legacy shortcode aliases still resolve to the new renderer.', 'quickdonate' ); ?></li>
+									<li><?php esc_html_e( 'No secret key is exposed in frontend markup or JavaScript.', 'quickdonate' ); ?></li>
+								</ul>
+							</div>
+						</div>
+					</div>
+
+					<!-- Advanced tab -->
+					<div class="quickdonate-tab-panel <?php echo esc_attr( $active === 'advanced' ? 'is-active' : '' ); ?>" data-tab="advanced">
+						<div class="quickdonate-grid quickdonate-grid--settings">
+							<div class="quickdonate-panel">
+								<h2><?php esc_html_e( 'Advanced', 'quickdonate' ); ?></h2>
+								<p class="quickdonate-panel__intro"><?php esc_html_e( 'Optional redirects and thank-you messaging after a verified successful donation.', 'quickdonate' ); ?></p>
+								<?php
+								$this->render_page_dropdown_field( 'success_page_id', __( 'Success page', 'quickdonate' ), (int) $settings['success_page_id'], __( 'Optional redirect after a verified successful donation.', 'quickdonate' ) );
+								$this->render_page_dropdown_field( 'failure_page_id', __( 'Failure page', 'quickdonate' ), (int) $settings['failure_page_id'], __( 'Optional redirect after a cancelled or failed checkout.', 'quickdonate' ) );
+								$this->render_textarea_field( 'thankyou_message', __( 'Thank-you message', 'quickdonate' ), $settings['thankyou_message'], 4, __( 'Displayed after a verified successful payment.', 'quickdonate' ) );
+								?>
+							</div>
+
+							<div class="quickdonate-panel">
+								<h2><?php esc_html_e( 'Help & Documentation', 'quickdonate' ); ?></h2>
+								<p class="quickdonate-panel__intro"><?php esc_html_e( 'Need guidance? Read the bundled docs for configuration tips and details.', 'quickdonate' ); ?></p>
+								<a class="button button-secondary" href="<?php echo esc_url( $docs_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open documentation', 'quickdonate' ); ?></a>
+							</div>
+						</div>
 					</div>
 				</div>
 
@@ -280,7 +348,7 @@ class QuickDonate_Admin {
 		$summary = QuickDonate_Logger::get_summary();
 		?>
 		<div class="wrap quickdonate-admin">
-			<?php $this->render_page_header( __( 'Overview', 'quickdonate' ), __( 'A quick snapshot of donation activity and recent verified payments.', 'quickdonate' ) ); ?>
+			<?php $this->render_page_header( __( 'Dashboard', 'quickdonate' ), __( 'Overview of your donation activity and performance.', 'quickdonate' ) ); ?>
 
 			<div class="quickdonate-stats-grid">
 				<?php
@@ -297,7 +365,7 @@ class QuickDonate_Admin {
 						<h2><?php esc_html_e( 'Recent donations', 'quickdonate' ); ?></h2>
 						<p class="quickdonate-panel__intro"><?php esc_html_e( 'Most recent successful payments recorded by the plugin.', 'quickdonate' ); ?></p>
 					</div>
-					<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . QUICKDONATE_SLUG . '-log' ) ); ?>"><?php esc_html_e( 'View full log', 'quickdonate' ); ?></a>
+					<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . QUICKDONATE_SLUG . '-logs' ) ); ?>"><?php esc_html_e( 'View full log', 'quickdonate' ); ?></a>
 				</div>
 
 				<?php if ( empty( $summary['recent'] ) ) : ?>
@@ -306,31 +374,33 @@ class QuickDonate_Admin {
 						<p><?php esc_html_e( 'Once successful payments are verified, they will appear here automatically.', 'quickdonate' ); ?></p>
 					</div>
 				<?php else : ?>
-					<table class="quickdonate-table">
-						<thead>
-							<tr>
-								<th><?php esc_html_e( 'Donor / Email', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Amount', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Type', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Gateway', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Date', 'quickdonate' ); ?></th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php foreach ( $summary['recent'] as $row ) : ?>
+					<div class="quickdonate-table-wrap">
+						<table class="quickdonate-table">
+							<thead>
 								<tr>
-									<td>
-										<div class="quickdonate-table__primary"><?php esc_html_e( 'Guest donor', 'quickdonate' ); ?></div>
-										<div class="quickdonate-table__secondary"><?php echo esc_html( $row->donor_email ); ?></div>
-									</td>
-									<td><?php echo esc_html( $row->currency . ' ' . number_format_i18n( $row->amount, 2 ) ); ?></td>
-									<td><?php $this->render_amount_type_badge( $row->amount_type ?? 'preset' ); ?></td>
-									<td><?php $this->render_gateway_badge( $row->gateway ?? 'paystack' ); ?></td>
-									<td><?php echo esc_html( $row->created_at ); ?></td>
+									<th><?php esc_html_e( 'Donor / Email', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Amount', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Type', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Gateway', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Date', 'quickdonate' ); ?></th>
 								</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
+							</thead>
+							<tbody>
+								<?php foreach ( $summary['recent'] as $row ) : ?>
+									<tr>
+										<td>
+											<div class="quickdonate-table__primary"><?php esc_html_e( 'Guest donor', 'quickdonate' ); ?></div>
+											<div class="quickdonate-table__secondary"><?php echo esc_html( $row->donor_email ); ?></div>
+										</td>
+										<td><?php echo esc_html( $row->currency . ' ' . number_format_i18n( $row->amount, 2 ) ); ?></td>
+										<td><?php $this->render_amount_type_badge( $row->amount_type ?? 'preset' ); ?></td>
+										<td><?php $this->render_gateway_badge( $row->gateway ?? 'paystack' ); ?></td>
+										<td><?php echo esc_html( $row->created_at ); ?></td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
 				<?php endif; ?>
 			</div>
 		</div>
@@ -366,7 +436,7 @@ class QuickDonate_Admin {
 		);
 
 		$status_counts = QuickDonate_Logger::get_status_counts();
-		$base_url      = add_query_arg( 'page', QUICKDONATE_SLUG . '-log', admin_url( 'admin.php' ) );
+		$base_url      = add_query_arg( 'page', QUICKDONATE_SLUG . '-logs', admin_url( 'admin.php' ) );
 		?>
 		<div class="wrap quickdonate-admin">
 			<?php $this->render_page_header( __( 'Donation Log', 'quickdonate' ), __( 'Review donation attempts, verification outcomes, and the exact payment references stored by the plugin.', 'quickdonate' ) ); ?>
@@ -377,7 +447,7 @@ class QuickDonate_Admin {
 						<h2><?php esc_html_e( 'All donations', 'quickdonate' ); ?></h2>
 						<p class="quickdonate-panel__intro"><?php esc_html_e( 'Entries are updated when the active gateway verification succeeds or fails.', 'quickdonate' ); ?></p>
 					</div>
-					<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . QUICKDONATE_SLUG ) ); ?>"><?php esc_html_e( 'Back to settings', 'quickdonate' ); ?></a>
+					<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . QUICKDONATE_SLUG . '-settings' ) ); ?>"><?php esc_html_e( 'Back to settings', 'quickdonate' ); ?></a>
 				</div>
 
 				<div class="quickdonate-filter-tabs">
@@ -401,37 +471,39 @@ class QuickDonate_Admin {
 						?>
 					</p>
 
-					<table class="quickdonate-table">
-						<thead>
-							<tr>
-								<th><?php esc_html_e( 'Donor / Email', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Amount', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Currency', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Amount type', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Gateway', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Reference', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Status', 'quickdonate' ); ?></th>
-								<th><?php esc_html_e( 'Date', 'quickdonate' ); ?></th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php foreach ( $donations as $row ) : ?>
+					<div class="quickdonate-table-wrap">
+						<table class="quickdonate-table">
+							<thead>
 								<tr>
-									<td>
-										<div class="quickdonate-table__primary"><?php esc_html_e( 'Guest donor', 'quickdonate' ); ?></div>
-										<div class="quickdonate-table__secondary"><?php echo esc_html( $row->donor_email ); ?></div>
-									</td>
-									<td><?php echo esc_html( number_format_i18n( $row->amount, 2 ) ); ?></td>
-									<td><?php echo esc_html( $row->currency ); ?></td>
-									<td><?php $this->render_amount_type_badge( $row->amount_type ?? 'preset' ); ?></td>
-									<td><?php $this->render_gateway_badge( $row->gateway ?? 'paystack' ); ?></td>
-									<td><code><?php echo esc_html( $row->reference ); ?></code></td>
-									<td><?php $this->render_status_badge( $row->status ); ?></td>
-									<td><?php echo esc_html( $row->created_at ); ?></td>
+									<th><?php esc_html_e( 'Donor / Email', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Amount', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Currency', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Amount type', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Gateway', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Reference', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Status', 'quickdonate' ); ?></th>
+									<th><?php esc_html_e( 'Date', 'quickdonate' ); ?></th>
 								</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
+							</thead>
+							<tbody>
+								<?php foreach ( $donations as $row ) : ?>
+									<tr>
+										<td>
+											<div class="quickdonate-table__primary"><?php esc_html_e( 'Guest donor', 'quickdonate' ); ?></div>
+											<div class="quickdonate-table__secondary"><?php echo esc_html( $row->donor_email ); ?></div>
+										</td>
+										<td><?php echo esc_html( number_format_i18n( $row->amount, 2 ) ); ?></td>
+										<td><?php echo esc_html( $row->currency ); ?></td>
+										<td><?php $this->render_amount_type_badge( $row->amount_type ?? 'preset' ); ?></td>
+										<td><?php $this->render_gateway_badge( $row->gateway ?? 'paystack' ); ?></td>
+										<td><code><?php echo esc_html( $row->reference ); ?></code></td>
+										<td><?php $this->render_status_badge( $row->status ); ?></td>
+										<td><?php echo esc_html( $row->created_at ); ?></td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
 
 					<?php if ( $pages > 1 ) : ?>
 						<div class="quickdonate-pagination">
@@ -462,26 +534,37 @@ class QuickDonate_Admin {
 	}
 
 	/**
-	 * Render a page header.
+	 * Render a page header with logo and docs shortcut.
 	 *
 	 * @param string $title       Title text.
 	 * @param string $description Description text.
 	 * @return void
 	 */
 	private function render_page_header( $title, $description ) {
+		$docs_url = plugins_url( 'docs/overview.md', QUICKDONATE_FILE );
 		?>
 		<div class="quickdonate-page-header">
-			<div>
-				<p class="quickdonate-eyebrow"><?php esc_html_e( 'QuickDonate', 'quickdonate' ); ?></p>
-				<h1><?php echo esc_html( $title ); ?></h1>
-				<p><?php echo esc_html( $description ); ?></p>
+			<div class="quickdonate-page-header__row">
+				<div class="quickdonate-page-header__brand">
+					<div class="quickdonate-page-header__logo" aria-hidden="true">
+						<img class="quickdonate-page-header__logo-img" src="<?php echo esc_url( QUICKDONATE_URL . 'assets/img/quickdonate-icon.png' ); ?>" alt="<?php echo esc_attr__( 'QuickDonate icon', 'quickdonate' ); ?>" width="24" height="24" />
+					</div>
+					<div>
+						<p class="quickdonate-eyebrow"><?php esc_html_e( 'QuickDonate', 'quickdonate' ); ?></p>
+						<h1><?php echo esc_html( $title ); ?></h1>
+						<p><?php echo esc_html( $description ); ?></p>
+					</div>
+				</div>
+				<div class="quickdonate-page-header__actions">
+					<a class="button button-secondary" href="<?php echo esc_url( $docs_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Docs', 'quickdonate' ); ?></a>
+				</div>
 			</div>
 		</div>
 		<?php
 	}
 
 	/**
-	 * Render a statistic card.
+	 * Render a statistic card (with tone color).
 	 *
 	 * @param string $label Label.
 	 * @param string $value Value.
@@ -491,6 +574,7 @@ class QuickDonate_Admin {
 	private function render_stat_card( $label, $value, $tone ) {
 		?>
 		<div class="quickdonate-stat-card quickdonate-stat-card--<?php echo esc_attr( $tone ); ?>">
+			<span class="quickdonate-stat-card__icon quickdonate-stat-card__icon--<?php echo esc_attr( $tone ); ?>" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5A5.5 5.5 0 0 1 12 5.09 5.5 5.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>
 			<span class="quickdonate-stat-card__label"><?php echo esc_html( $label ); ?></span>
 			<strong class="quickdonate-stat-card__value"><?php echo esc_html( $value ); ?></strong>
 		</div>

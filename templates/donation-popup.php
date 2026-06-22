@@ -48,7 +48,7 @@ $allow_custom = isset( $settings['allow_custom'] ) && '1' === $settings['allow_c
 					</div>
 					<div>
 						<p class="quickdonate-modal__eyebrow"><?php esc_html_e( 'QuickDonate', 'quickdonate' ); ?></p>
-						<h2 class="quickdonate-modal__title" id="<?php echo esc_attr( $uid . '-title' ); ?>"><?php esc_html_e( 'Support this work', 'quickdonate' ); ?></h2>
+						<h2 class="quickdonate-modal__title" id="<?php echo esc_attr( $uid . '-title' ); ?>"><?php esc_html_e( 'Support our mission', 'quickdonate' ); ?></h2>
 						<p class="quickdonate-modal__subtitle"><?php esc_html_e( 'Choose an amount, enter your email, and complete your secure donation in a few clicks.', 'quickdonate' ); ?></p>
 					</div>
 				</div>
@@ -90,7 +90,7 @@ $allow_custom = isset( $settings['allow_custom'] ) && '1' === $settings['allow_c
 							data-email-id="<?php echo esc_attr( $uid . '-email' ); ?>"
 							data-alert-id="<?php echo esc_attr( $uid . '-alert' ); ?>"
 						>
-							<span class="quickdonate-submit-btn__text"><?php esc_html_e( 'Donate now', 'quickdonate' ); ?></span>
+							<span class="quickdonate-submit-btn__text"><?php esc_html_e( 'Continue to Checkout', 'quickdonate' ); ?></span>
 							<span class="quickdonate-submit-btn__spinner" aria-hidden="true"></span>
 						</button>
 						<p class="quickdonate-secure-note">

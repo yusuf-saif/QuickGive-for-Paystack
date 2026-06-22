@@ -50,7 +50,7 @@
 
 		const textEl = button.querySelector( '.quickdonate-submit-btn__text' );
 		if ( textEl ) {
-			textEl.textContent = isLoading ? ( label || i18n.processing || 'Processing...' ) : ( i18n.donate || 'Donate now' );
+			textEl.textContent = isLoading ? ( label || i18n.processing || 'Processing...' ) : ( i18n.cta || 'Continue to Checkout' );
 		}
 	}
 

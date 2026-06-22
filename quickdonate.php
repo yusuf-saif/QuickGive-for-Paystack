@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       QuickDonate
  * Plugin URI:        https://wordpress.org/plugins/quickdonate/
- * Description:       Collect one-time donations with a modern popup experience. Use the [quickdonate_popup] shortcode to launch secure checkout.
- * Version:           1.2.0
+ * Description:       A lightweight donation popup plugin for WordPress with secure gateway-based payment verification.
+ * Version:           1.0.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            saif2002
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'QUICKDONATE_VERSION', '1.2.0' );
+define( 'QUICKDONATE_VERSION', '1.0.0' );
 define( 'QUICKDONATE_FILE', __FILE__ );
 define( 'QUICKDONATE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'QUICKDONATE_URL', plugin_dir_url( __FILE__ ) );

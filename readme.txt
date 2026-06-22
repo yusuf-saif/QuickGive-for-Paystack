@@ -4,15 +4,18 @@ Tags: donations, fundraising, paystack, charity, payments
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: quickdonate
 
 Collect secure one-time donations with a clean popup checkout, donation logs, thank-you emails, and Paystack verification.
 
 == Description ==
 
 QuickDonate is a lightweight donation plugin for WordPress. It provides a shortcode-triggered popup, preset and custom donation amounts, donor email capture, server-side verification, donation logging, and optional thank-you emails.
+
+QuickDonate is gateway-ready for future expansion, but this release includes only Paystack as a working gateway.
 
 The plugin is architected for future gateway expansion. Paystack is the first supported gateway and remains the only fully functional gateway in this release.
 
@@ -24,6 +27,9 @@ https://paystack.com/terms
 
 Paystack Privacy Policy:
 https://paystack.com/privacy
+
+Non-affiliation disclaimer:
+"QuickDonate is independently developed and is not affiliated with, endorsed by, or sponsored by Paystack, GiveWP, Donorbox, or any other third-party payment provider."
 
 == Installation ==
 
@@ -57,19 +63,27 @@ Yes. You can configure preset amounts and optionally allow donors to enter a cus
 
 Yes. The modal overlay is moved to `document.body` to avoid being trapped inside Elementor containers with overflow or transform stacking contexts.
 
+== Screenshots ==
+
+1. QuickDonate dashboard showing donation totals, successful donations, total raised, and average donation.
+2. QuickDonate settings page with donation amounts, email settings, Paystack gateway settings, and advanced options.
+3. Frontend donation popup with preset amounts, custom amount field, donor email field, and secure checkout button.
+4. Donation logs page showing donor details, amount, currency, gateway, reference, status, and date.
+
 == Changelog ==
 
-= 1.2.0 =
-* Renamed the plugin from QuickGive to QuickDonate.
-* Added gateway abstraction with Paystack as the first supported gateway.
-* Added the new `[quickdonate_popup]` shortcode.
-* Kept backward-compatible support for `[paystack_donation_popup]` and `[quickgive_donation_popup]`.
-* Redesigned the admin settings, overview, and donation log pages.
-* Redesigned the frontend donation popup and button styles.
-* Fixed Elementor modal containment by relocating overlays to `document.body`.
-* Added gateway tracking to donation logs and summary views.
+= 1.0.0 =
+* Initial WordPress.org-ready release of QuickDonate.
+* Added shortcode-triggered donation popup.
+* Added preset and custom donation amounts.
+* Added Paystack gateway verification.
+* Added donation logs.
+* Added donor thank-you email.
+* Added Elementor-safe modal behavior.
+* Added clean admin dashboard, settings, and logs interface.
+* Added backward-compatible legacy shortcode aliases.
 
 == Upgrade Notice ==
 
-= 1.2.0 =
-QuickDonate automatically migrates legacy settings from `quickgive_settings` and upgrades legacy donation tables where needed.
+= 1.0.0 =
+First public release on WordPress.org.

@@ -51,6 +51,10 @@ Legacy aliases still work and route to the same renderer:
 - `docs/gateways.md`
 - `docs/faq.md`
 
+## Disclaimer
+
+“QuickDonate is independently developed and is not affiliated with, endorsed by, or sponsored by Paystack, GiveWP, Donorbox, or any other third-party payment provider.”
+
 ## Security Notes
 
 - Secret keys are stored in WordPress options and used only server-side.
@@ -60,7 +64,7 @@ Legacy aliases still work and route to the same renderer:
 
 ## Development Notes
 
-- Main plugin file: `quickgive.php` (kept for upgrade safety)
+- Main plugin file: `quickdonate.php`
 - Text domain: `quickdonate`
 - Option name: `quickdonate_settings`
 - Legacy option data is migrated automatically from `quickgive_settings`
