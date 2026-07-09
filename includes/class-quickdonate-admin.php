@@ -195,11 +195,6 @@ class QuickDonate_Admin {
 					<span><?php esc_html_e( 'Shortcode', 'quickdonate' ); ?></span>
 					<code>[quickdonate_popup]</code>
 				</div>
-				<div class="quickdonate-inline-code quickdonate-inline-code--muted">
-					<span><?php esc_html_e( 'Legacy aliases', 'quickdonate' ); ?></span>
-					<code>[paystack_donation_popup]</code>
-					<code>[quickgive_donation_popup]</code>
-				</div>
 			</div>
 
 			<div class="quickdonate-tabs">
@@ -300,7 +295,6 @@ class QuickDonate_Admin {
 									<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . QUICKDONATE_SLUG . '-overview' ) ); ?>"><?php esc_html_e( 'Open dashboard', 'quickdonate' ); ?></a>
 								</div>
 								<ul class="quickdonate-checklist">
-									<li><?php esc_html_e( 'Legacy shortcode aliases still resolve to the new renderer.', 'quickdonate' ); ?></li>
 									<li><?php esc_html_e( 'No secret key is exposed in frontend markup or JavaScript.', 'quickdonate' ); ?></li>
 								</ul>
 							</div>

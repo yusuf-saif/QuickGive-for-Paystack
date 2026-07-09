@@ -4,7 +4,7 @@ Tags: donations, fundraising, paystack, charity, payments
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: quickdonate
@@ -45,8 +45,6 @@ Non-affiliation disclaimer:
 
 Use `[quickdonate_popup]`.
 
-Legacy aliases `[paystack_donation_popup]` and `[quickgive_donation_popup]` still work for backward compatibility.
-
 = Does QuickDonate support more than one gateway? =
 
 The plugin is structured for multiple gateways, but this release only includes Paystack as a working gateway.
@@ -72,6 +70,9 @@ Yes. The modal overlay is moved to `document.body` to avoid being trapped inside
 
 == Changelog ==
 
+= 1.0.1 =
+* Removed legacy backward-compatibility code and shortcode aliases.
+
 = 1.0.0 =
 * Initial WordPress.org-ready release of QuickDonate.
 * Added shortcode-triggered donation popup.
@@ -81,9 +82,11 @@ Yes. The modal overlay is moved to `document.body` to avoid being trapped inside
 * Added donor thank-you email.
 * Added Elementor-safe modal behavior.
 * Added clean admin dashboard, settings, and logs interface.
-* Added backward-compatible legacy shortcode aliases.
 
 == Upgrade Notice ==
+
+= 1.0.1 =
+Legacy shortcode aliases and backward-compatible migration code removed.
 
 = 1.0.0 =
 First public release on WordPress.org.

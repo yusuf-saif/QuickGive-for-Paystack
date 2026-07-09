@@ -16,7 +16,6 @@ Use this checklist before every WordPress.org submission or manual release.
 - [ ] Settings page loads and all tabs render correctly
 - [ ] Settings save works (all tabs: general, emails, gateways, logs, advanced)
 - [ ] Shortcode `[quickdonate_popup]` renders the donation button and popup
-- [ ] Legacy shortcodes `[paystack_donation_popup]` and `[quickgive_donation_popup]` render correctly
 - [ ] Preset amount buttons display and are selectable
 - [ ] Custom amount input works when enabled
 - [ ] Donor email validation works
@@ -59,7 +58,7 @@ Use this checklist before every WordPress.org submission or manual release.
 - [ ] AJAX nonce verification works
 - [ ] All user input is sanitized
 - [ ] All output is escaped
-- [ ] `uninstall.php` cleans all plugin data and legacy data
+- [ ] `uninstall.php` cleans all plugin data
 
 ## Package
 

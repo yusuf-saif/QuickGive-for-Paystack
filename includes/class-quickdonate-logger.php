@@ -20,11 +20,6 @@ class QuickDonate_Logger {
 	const TABLE = 'quickdonate_donations';
 
 	/**
-	 * Legacy table name without prefix.
-	 */
-	const LEGACY_TABLE = 'quickgive_donations';
-
-	/**
 	 * Current DB version.
 	 */
 	const DB_VERSION = '1.0.0';
@@ -33,11 +28,6 @@ class QuickDonate_Logger {
 	 * Current DB version option.
 	 */
 	const DB_VERSION_OPTION = 'quickdonate_db_version';
-
-	/**
-	 * Legacy DB version option.
-	 */
-	const LEGACY_DB_VERSION_OPTION = 'quickgive_db_version';
 
 	/**
 	 * Create or update the donations table.
@@ -71,7 +61,6 @@ class QuickDonate_Logger {
 		dbDelta( $sql );
 
 		update_option( self::DB_VERSION_OPTION, self::DB_VERSION );
-		update_option( self::LEGACY_DB_VERSION_OPTION, self::DB_VERSION );
 	}
 
 	/**
@@ -84,7 +73,6 @@ class QuickDonate_Logger {
 			return;
 		}
 
-		self::migrate_legacy_table();
 		self::create_table();
 	}
 
@@ -280,25 +268,6 @@ class QuickDonate_Logger {
 			'currency'         => sanitize_text_field( $settings['currency'] ?? 'NGN' ),
 			'recent'           => $recent ? $recent : array(),
 		);
-	}
-
-	/**
-	 * Rename the legacy table when upgrading existing installs.
-	 *
-	 * @return void
-	 */
-	private static function migrate_legacy_table() {
-		global $wpdb;
-
-		$new_table    = $wpdb->prefix . self::TABLE;
-		$legacy_table = $wpdb->prefix . self::LEGACY_TABLE;
-
-		$has_new    = self::table_exists( self::TABLE );
-		$has_legacy = self::table_exists( self::LEGACY_TABLE );
-
-		if ( ! $has_new && $has_legacy ) {
-			$wpdb->query( "RENAME TABLE {$legacy_table} TO {$new_table}" );
-		}
 	}
 
 	/**

@@ -20,19 +20,9 @@ class QuickDonate_Ajax {
 	const ACTION = 'quickdonate_verify';
 
 	/**
-	 * Legacy AJAX action.
-	 */
-	const LEGACY_ACTION = 'quickgive_verify';
-
-	/**
 	 * Current nonce action.
 	 */
 	const NONCE_ACTION = 'quickdonate_nonce';
-
-	/**
-	 * Legacy nonce action.
-	 */
-	const LEGACY_NONCE_ACTION = 'quickgive_nonce';
 
 	/**
 	 * Constructor.
@@ -40,8 +30,6 @@ class QuickDonate_Ajax {
 	public function __construct() {
 		add_action( 'wp_ajax_' . self::ACTION, array( $this, 'verify_transaction' ) );
 		add_action( 'wp_ajax_nopriv_' . self::ACTION, array( $this, 'verify_transaction' ) );
-		add_action( 'wp_ajax_' . self::LEGACY_ACTION, array( $this, 'verify_transaction' ) );
-		add_action( 'wp_ajax_nopriv_' . self::LEGACY_ACTION, array( $this, 'verify_transaction' ) );
 	}
 
 	/**
@@ -128,12 +116,12 @@ class QuickDonate_Ajax {
 	}
 
 	/**
-	 * Validate either the current or legacy nonce.
+	 * Validate the current nonce.
 	 *
 	 * @param string $nonce Submitted nonce.
 	 * @return bool
 	 */
 	private function is_valid_nonce( $nonce ) {
-		return wp_verify_nonce( $nonce, self::NONCE_ACTION ) || wp_verify_nonce( $nonce, self::LEGACY_NONCE_ACTION );
+		return wp_verify_nonce( $nonce, self::NONCE_ACTION );
 	}
 }

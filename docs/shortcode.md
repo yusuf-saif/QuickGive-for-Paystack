@@ -6,13 +6,6 @@ Primary shortcode:
 [quickdonate_popup]
 ```
 
-Backward-compatible aliases:
-
-```text
-[paystack_donation_popup]
-[quickgive_donation_popup]
-```
-
 Behavior:
 
 - Renders the donate button in place

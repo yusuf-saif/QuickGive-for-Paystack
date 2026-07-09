@@ -6,7 +6,6 @@ QuickDonate is a lightweight WordPress donation plugin with a polished popup che
 
 - Modern shortcode-triggered donation popup
 - New primary shortcode: `[quickdonate_popup]`
-- Backward-compatible shortcode aliases: `[paystack_donation_popup]` and `[quickgive_donation_popup]`
 - Preset amounts and optional custom amount entry
 - Donor email capture
 - Server-side payment verification
@@ -27,13 +26,6 @@ The plugin UI is branded generically so future gateways can be added without cha
 
 ```text
 [quickdonate_popup]
-```
-
-Legacy aliases still work and route to the same renderer:
-
-```text
-[paystack_donation_popup]
-[quickgive_donation_popup]
 ```
 
 ## Admin Areas
@@ -67,4 +59,3 @@ Legacy aliases still work and route to the same renderer:
 - Main plugin file: `quickdonate.php`
 - Text domain: `quickdonate`
 - Option name: `quickdonate_settings`
-- Legacy option data is migrated automatically from `quickgive_settings`

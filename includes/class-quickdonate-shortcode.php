@@ -26,26 +26,6 @@ class QuickDonate_Shortcode {
 	 */
 	public function __construct() {
 		add_shortcode( 'quickdonate_popup', array( $this, 'render' ) );
-		add_shortcode( 'paystack_donation_popup', array( $this, 'render_legacy' ) );
-		add_shortcode( 'quickgive_donation_popup', array( $this, 'render_legacy' ) );
-	}
-
-	/**
-	 * Render legacy shortcodes through the new renderer.
-	 *
-	 * @param array  $atts    Shortcode attributes.
-	 * @param string $content Shortcode content.
-	 * @param string $tag     Shortcode tag.
-	 * @return string
-	 */
-	public function render_legacy( $atts, $content = '', $tag = '' ) {
-		unset( $content );
-
-		if ( '' !== $tag ) {
-			_deprecated_argument( __METHOD__, QUICKDONATE_VERSION, sprintf( __( 'Use [%s] instead.', 'quickdonate' ), 'quickdonate_popup' ) );
-		}
-
-		return $this->render( $atts, '', $tag );
 	}
 
 	/**

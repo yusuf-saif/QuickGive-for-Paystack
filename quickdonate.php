@@ -3,7 +3,7 @@
  * Plugin Name:       QuickDonate
  * Plugin URI:        https://wordpress.org/plugins/quickdonate/
  * Description:       A lightweight donation popup plugin for WordPress with secure gateway-based payment verification.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            saif2002
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'QUICKDONATE_VERSION', '1.0.0' );
+define( 'QUICKDONATE_VERSION', '1.0.1' );
 define( 'QUICKDONATE_FILE', __FILE__ );
 define( 'QUICKDONATE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'QUICKDONATE_URL', plugin_dir_url( __FILE__ ) );
@@ -65,7 +65,6 @@ final class QuickDonate_Plugin {
 	 */
 	public static function activate() {
 		require_once QUICKDONATE_DIR . 'includes/class-quickdonate-logger.php';
-		self::migrate_legacy_settings();
 		QuickDonate_Logger::maybe_upgrade_table();
 	}
 
@@ -98,11 +97,9 @@ final class QuickDonate_Plugin {
 	 * @return void
 	 */
 	private function init_hooks() {
-		self::migrate_legacy_settings();
 		QuickDonate_Logger::maybe_upgrade_table();
 
 		add_action( 'init', array( $this, 'load_textdomain' ) );
-		add_action( 'update_option_' . QUICKDONATE_OPTION_NAME, array( $this, 'sync_legacy_settings' ), 10, 2 );
 
 		new QuickDonate_Admin();
 		new QuickDonate_Ajax();
@@ -116,18 +113,6 @@ final class QuickDonate_Plugin {
 	 */
 	public function load_textdomain() {
 		load_plugin_textdomain( 'quickdonate', false, dirname( plugin_basename( QUICKDONATE_FILE ) ) . '/languages' );
-	}
-
-	/**
-	 * Keep the legacy option in sync after saving the new one.
-	 *
-	 * @param array $old_value Previous option value.
-	 * @param array $value     New option value.
-	 * @return void
-	 */
-	public function sync_legacy_settings( $old_value, $value ) {
-		unset( $old_value );
-		update_option( 'quickgive_settings', self::normalize_settings( $value ) );
 	}
 
 	/**
@@ -176,34 +161,14 @@ final class QuickDonate_Plugin {
 	}
 
 	/**
-	 * Retrieve plugin settings with legacy fallback.
+	 * Retrieve plugin settings.
 	 *
 	 * @return array
 	 */
 	public static function get_settings() {
-		$settings = get_option( QUICKDONATE_OPTION_NAME, null );
-
-		if ( null === $settings ) {
-			$settings = get_option( 'quickgive_settings', array() );
-		}
+		$settings = get_option( QUICKDONATE_OPTION_NAME, array() );
 
 		return self::normalize_settings( $settings );
-	}
-
-	/**
-	 * Migrate legacy settings into the renamed option.
-	 *
-	 * @return void
-	 */
-	public static function migrate_legacy_settings() {
-		$new_settings = get_option( QUICKDONATE_OPTION_NAME, null );
-
-		if ( null !== $new_settings ) {
-			return;
-		}
-
-		$legacy_settings = get_option( 'quickgive_settings', array() );
-		update_option( QUICKDONATE_OPTION_NAME, self::normalize_settings( $legacy_settings ) );
 	}
 
 	/**
