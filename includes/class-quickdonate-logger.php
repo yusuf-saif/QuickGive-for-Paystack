@@ -95,6 +95,7 @@ class QuickDonate_Logger {
 		$amount_type = 'custom' === $amount_type ? 'custom' : 'preset';
 		$gateway     = sanitize_key( $gateway ? $gateway : 'paystack' );
 
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$existing = $wpdb->get_var(
 			$wpdb->prepare( "SELECT id FROM {$table} WHERE reference = %s LIMIT 1", $reference )
 		);
@@ -118,6 +119,7 @@ class QuickDonate_Logger {
 			return (int) $existing;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Intentional write to donations table.
 		$result = $wpdb->insert(
 			$table,
 			array(
@@ -131,6 +133,7 @@ class QuickDonate_Logger {
 			),
 			array( '%s', '%s', '%f', '%s', '%s', '%s', '%s' )
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		return $result ? $wpdb->insert_id : false;
 	}
@@ -146,6 +149,7 @@ class QuickDonate_Logger {
 
 		$table = $wpdb->prefix . self::TABLE;
 
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		if ( '' !== $status ) {
 			return (int) $wpdb->get_var(
 				$wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE status = %s", sanitize_text_field( $status ) )
@@ -153,6 +157,7 @@ class QuickDonate_Logger {
 		}
 
 		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE 1 = %d", 1 ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	/**
@@ -164,7 +169,9 @@ class QuickDonate_Logger {
 		global $wpdb;
 
 		$table = $wpdb->prefix . self::TABLE;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows  = $wpdb->get_results( $wpdb->prepare( "SELECT status, COUNT(*) AS cnt FROM {$table} WHERE 1 = %d GROUP BY status", 1 ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		$counts = array(
 			'total'   => 0,
@@ -206,6 +213,7 @@ class QuickDonate_Logger {
 		$limit  = absint( $args['limit'] );
 		$offset = absint( $args['offset'] );
 
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		if ( '' !== $args['status'] ) {
 			return (array) $wpdb->get_results(
 				$wpdb->prepare(
@@ -224,6 +232,7 @@ class QuickDonate_Logger {
 				$offset
 			)
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	/**
@@ -236,6 +245,7 @@ class QuickDonate_Logger {
 
 		$table    = $wpdb->prefix . self::TABLE;
 		$settings = QuickDonate_Plugin::get_settings();
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$row      = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT
@@ -259,6 +269,7 @@ class QuickDonate_Logger {
 				5
 			)
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		return array(
 			'total_count'      => $row ? (int) $row->total_count : 0,
@@ -281,6 +292,8 @@ class QuickDonate_Logger {
 
 		$table = $wpdb->prefix . $table_name;
 
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		return (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	}
 }

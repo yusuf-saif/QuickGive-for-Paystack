@@ -173,6 +173,7 @@ class QuickDonate_Admin {
 
 		$settings  = QuickDonate_Plugin::get_settings();
 		$docs_url  = plugins_url( 'docs/overview.md', QUICKDONATE_FILE );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Tab state is navigational, not form processing.
 		$active    = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
 		$tabs      = array(
 			'general'  => __( 'General', 'quickdonate' ),
@@ -409,6 +410,7 @@ class QuickDonate_Admin {
 	public function render_log_page() {
 		$this->check_permissions();
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Status filter is navigational, not form processing.
 		$status_filter    = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : '';
 		$allowed_statuses = array( '', 'success', 'failed', 'pending' );
 
@@ -417,6 +419,7 @@ class QuickDonate_Admin {
 		}
 
 		$per_page  = 50;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Pagination is navigational, not form processing.
 		$page      = max( 1, absint( $_GET['paged'] ?? 1 ) );
 		$offset    = ( $page - 1 ) * $per_page;
 		$total     = QuickDonate_Logger::get_count( $status_filter );
@@ -457,6 +460,7 @@ class QuickDonate_Admin {
 					<p class="quickdonate-table-meta">
 						<?php
 						printf(
+							/* translators: 1: start number, 2: end number, 3: total donations */
 							esc_html__( 'Showing %1$s-%2$s of %3$s donations.', 'quickdonate' ),
 							esc_html( number_format_i18n( $offset + 1 ) ),
 							esc_html( number_format_i18n( min( $offset + $per_page, $total ) ) ),
@@ -504,7 +508,9 @@ class QuickDonate_Admin {
 							<?php if ( $page > 1 ) : ?>
 								<a class="button button-secondary" href="<?php echo esc_url( add_query_arg( 'paged', $page - 1, $base_url ) ); ?>"><?php esc_html_e( 'Previous', 'quickdonate' ); ?></a>
 							<?php endif; ?>
-							<span><?php printf( esc_html__( 'Page %1$s of %2$s', 'quickdonate' ), esc_html( number_format_i18n( $page ) ), esc_html( number_format_i18n( $pages ) ) ); ?></span>
+							<span><?php printf(
+							/* translators: 1: current page number, 2: total pages */
+							esc_html__( 'Page %1$s of %2$s', 'quickdonate' ), esc_html( number_format_i18n( $page ) ), esc_html( number_format_i18n( $pages ) ) ); ?></span>
 							<?php if ( $page < $pages ) : ?>
 								<a class="button button-secondary" href="<?php echo esc_url( add_query_arg( 'paged', $page + 1, $base_url ) ); ?>"><?php esc_html_e( 'Next', 'quickdonate' ); ?></a>
 							<?php endif; ?>
@@ -753,9 +759,10 @@ class QuickDonate_Admin {
 	 */
 	private function render_page_dropdown_field( $key, $label, $value, $description = '' ) {
 		$this->render_field_wrapper_start( $label, $description );
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_dropdown_pages() handles its own output escaping internally.
 		wp_dropdown_pages(
 			array(
-				'name'              => self::OPTION_NAME . '[' . $key . ']',
+				'name'              => esc_attr( self::OPTION_NAME . '[' . $key . ']' ),
 				'selected'          => $value,
 				'show_option_none'  => __( 'No redirect', 'quickdonate' ),
 				'option_none_value' => 0,

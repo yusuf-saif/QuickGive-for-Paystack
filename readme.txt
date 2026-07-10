@@ -26,7 +26,7 @@ Paystack Terms of Service:
 https://paystack.com/terms
 
 Paystack Privacy Policy:
-https://paystack.com/privacy
+https://paystack.com/privacy/merchant
 
 Non-affiliation disclaimer:
 "QuickDonate is independently developed and is not affiliated with, endorsed by, or sponsored by Paystack, GiveWP, Donorbox, or any other third-party payment provider."

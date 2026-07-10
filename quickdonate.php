@@ -99,20 +99,9 @@ final class QuickDonate_Plugin {
 	private function init_hooks() {
 		QuickDonate_Logger::maybe_upgrade_table();
 
-		add_action( 'init', array( $this, 'load_textdomain' ) );
-
 		new QuickDonate_Admin();
 		new QuickDonate_Ajax();
 		new QuickDonate_Shortcode();
-	}
-
-	/**
-	 * Load translations.
-	 *
-	 * @return void
-	 */
-	public function load_textdomain() {
-		load_plugin_textdomain( 'quickdonate', false, dirname( plugin_basename( QUICKDONATE_FILE ) ) . '/languages' );
 	}
 
 	/**

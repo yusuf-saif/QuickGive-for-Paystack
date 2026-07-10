@@ -40,7 +40,7 @@ class QuickDonate_Ajax {
 	public function verify_transaction() {
 		$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
 
-		if ( ! $this->is_valid_nonce( $nonce ) ) {
+		if ( ! wp_verify_nonce( $nonce, self::NONCE_ACTION ) ) {
 			wp_send_json_error(
 				array( 'message' => __( 'Security check failed. Please refresh the page and try again.', 'quickdonate' ) ),
 				403
@@ -113,15 +113,5 @@ class QuickDonate_Ajax {
 				'reference' => sanitize_text_field( $result['reference'] ),
 			)
 		);
-	}
-
-	/**
-	 * Validate the current nonce.
-	 *
-	 * @param string $nonce Submitted nonce.
-	 * @return bool
-	 */
-	private function is_valid_nonce( $nonce ) {
-		return wp_verify_nonce( $nonce, self::NONCE_ACTION );
 	}
 }

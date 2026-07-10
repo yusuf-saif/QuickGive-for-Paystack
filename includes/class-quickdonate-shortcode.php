@@ -84,7 +84,7 @@ class QuickDonate_Shortcode {
 			'paystack-inline',
 			'https://js.paystack.co/v2/inline.js',
 			array(),
-			null,
+			'2.0',
 			true
 		);
 
